@@ -1,14 +1,9 @@
 const express = require('express');
 const router = express.Router();
-
-const sessions = [
-  { id: '1', userId: '1', subject: 'Math', startTime: '2026-04-24T10:00:00Z', endTime: '2026-04-24T11:30:00Z', duration: 90, active: false },
-  { id: '2', userId: '2', subject: 'History', startTime: '2026-04-24T14:00:00Z', endTime: null, duration: null, active: true },
-];
-let nextSessionId = 3;
+const supabase = require('../db')
 
 // POST /sessions/start
-router.post('/start', (req, res) => {
+router.post('/start', async (req, res) => {
   console.log('POST /sessions/start', req.body);
   const { userId, subject } = req.body;
 
@@ -16,27 +11,45 @@ router.post('/start', (req, res) => {
     return res.status(400).json({ error: 'userId and subject are required' });
   }
 
-  const alreadyActive = sessions.find(s => s.userId === userId && s.active);
+  const {data: alreadyActive, error} = await supabase
+    .from('sessions')
+    .select()
+    .eq('user_id', userId)
+    .eq('active', true)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    console.error(error)
+    return res.status(500).json({ error: 'Database error' })
+  }
+
   if (alreadyActive) {
     return res.status(409).json({ error: 'User already has an active session' });
   }
 
-  const newSession = {
-    id: String(nextSessionId++),
-    userId,
-    subject,
-    startTime: new Date().toISOString(),
-    endTime: null,
-    duration: null,
-    active: true,
-  };
-  sessions.push(newSession);
+  const { data: newSession, error: insertError } = await supabase
+    .from('sessions')
+    .insert({
+      user_id: userId,
+      subject,
+      start_time: new Date().toISOString(),
+      end_time: null,
+      duration: null,
+      active: true,
+    })
+    .select()
+    .single()
+
+  if (insertError) {
+    console.error(insertError)
+    return res.status(500).json({ error: 'Database error' })
+  }
 
   res.status(201).json({ message: 'Session started', session: newSession });
 });
 
 // POST /sessions/stop
-router.post('/stop', (req, res) => {
+router.post('/stop', async (req, res) => {
   console.log('POST /sessions/stop', req.body);
   const { userId } = req.body;
 
@@ -44,24 +57,60 @@ router.post('/stop', (req, res) => {
     return res.status(400).json({ error: 'userId is required' });
   }
 
-  const session = sessions.find(s => s.userId === userId && s.active);
+  const { data: session , error } = await supabase
+    .from('sessions')
+    .select()
+    .eq('user_id', userId)
+    .eq('active', true)
+    .single();
+  
+  if (error && error.code !== 'PGRST116') {
+    console.error(error)
+    return res.status(500).json({ error: 'Database error' })
+  }
+
   if (!session) {
+    console.error(error);
     return res.status(404).json({ error: 'No active session found for this user' });
   }
 
-  session.endTime = new Date().toISOString();
-  session.duration = Math.round((new Date(session.endTime) - new Date(session.startTime)) / 60000);
-  session.active = false;
+  const endTime = new Date().toISOString();
+  const duration = Math.round((new Date(endTime) - new Date(session.start_time)) / 60000);
 
-  res.json({ message: 'Session stopped', session });
+  const { data: updatedSession, error: updateError } = await supabase
+    .from('sessions')
+    .update({
+      end_time: endTime,
+      duration: duration,
+      active: false
+    })
+    .eq('id', session.id)
+    .select()
+    .single()
+
+  if (updateError){
+    console.error(updateError);
+    return res.status(500).json({ error: 'Database insertion error' });
+  }
+  res.json({ message: 'Session stopped', updatedSession });
 });
 
 // GET /sessions/:userId
-router.get('/:userId', (req, res) => {
+router.get('/:userId', async (req, res) => {
   console.log('GET /sessions/:userId', req.params.userId);
   const { userId } = req.params;
 
-  const userSessions = sessions.filter(s => s.userId === userId);
+  const { data: userSessions, error } = await supabase
+    .from('sessions')
+    .select()
+    .eq('user_id', userId)
+  
+  if (error)
+  {
+    console.error(error);
+    return res.status(500).json({ error: 'Database error' })
+  }
+
   res.json({ sessions: userSessions });
 });
 

@@ -1,14 +1,10 @@
 const express = require('express');
 const router = express.Router();
 
-const users = [
-  { id: '1', username: 'alice', password: 'pass123', name: 'Alice' },
-  { id: '2', username: 'bob', password: 'pass456', name: 'Bob' },
-];
-let nextUserId = 3;
+const supabase = require('../db')
 
 // POST /auth/register
-router.post('/register', (req, res) => {
+router.post('/register', async (req, res) => {
   console.log('POST /auth/register', req.body);
   const { username, password, name } = req.body;
 
@@ -16,20 +12,38 @@ router.post('/register', (req, res) => {
     return res.status(400).json({ error: 'username, password, and name are required' });
   }
 
-  const existing = users.find(u => u.username === username);
+  const { data: existing, error } = await supabase
+  .from('users')
+  .select()
+  .eq('username', username)
+  .single()
+
+  if (error && error.code !== 'PGRST116') {
+    console.error(error)
+    return res.status(500).json({ error: 'Database error' })
+  }
+
   if (existing) {
     return res.status(409).json({ error: 'Username already taken' });
   }
 
-  const newUser = { id: String(nextUserId++), username, password, name };
-  users.push(newUser);
+  const { data: newUser, error: insertError } = await supabase
+    .from('users')
+    .insert({ username, password, name })
+    .select()
+    .single()
+
+  if (insertError) {
+    console.error(insertError)
+    return res.status(500).json({ error: 'Database error' })
+  }
 
   const { password: _, ...safeUser } = newUser;
   res.status(201).json({ message: 'User registered', user: safeUser });
 });
 
 // POST /auth/login
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   console.log('POST /auth/login', req.body);
   const { username, password } = req.body;
 
@@ -37,7 +51,18 @@ router.post('/login', (req, res) => {
     return res.status(400).json({ error: 'username and password are required' });
   }
 
-  const user = users.find(u => u.username === username && u.password === password);
+  const { data: user, error } = await supabase
+    .from('users')
+    .select()
+    .eq('username', username)
+    .eq('password', password)
+    .single()
+  
+  if (error && error.code !== 'PGRST116') {
+    console.error(error);
+    return res.status(500).json({ error: 'Database error' })
+  }
+
   if (!user) {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
