@@ -1,10 +1,22 @@
 const supabase = require('../db')
 
+function normalize(row) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    subject: row.subject,
+    startTime: row.start_time,
+    endTime: row.end_time,
+    duration: row.duration,
+    active: row.active
+  }
+}
+
 async function findActiveByUserId(userId) {
   const { data, error } = await supabase
     .from('sessions').select().eq('user_id', userId).eq('active', true).single()
   if (error && error.code !== 'PGRST116') throw error
-  return data
+  return data ? normalize(data) : null
 }
 
 async function create({ userId, subject, startTime }) {
@@ -13,7 +25,7 @@ async function create({ userId, subject, startTime }) {
     .insert({ user_id: userId, subject, start_time: startTime, end_time: null, duration: null, active: true })
     .select().single()
   if (error) throw error
-  return data
+  return normalize(data)
 }
 
 async function stop(id, endTime, duration) {
@@ -23,14 +35,14 @@ async function stop(id, endTime, duration) {
     .eq('id', id)
     .select().single()
   if (error) throw error
-  return data
+  return normalize(data)
 }
 
 async function findAllByUserId(userId) {
   const { data, error } = await supabase
     .from('sessions').select().eq('user_id', userId)
   if (error) throw error
-  return data
+  return data.map(normalize)
 }
 
 module.exports = { findActiveByUserId, create, stop, findAllByUserId }
