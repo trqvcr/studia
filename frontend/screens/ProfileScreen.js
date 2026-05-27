@@ -110,17 +110,86 @@ export default function ProfileScreen() {
       </SafeAreaView>
     );
   }
-  return (
-    <View style={styles.container}>
-      <Text>Name: {CURRENT_USER.name}</Text>
-      {DAYS.map((day) => (
-      <Text key={day}>{day}: {weeklyCounts[day] || 0} sessions </Text>
-    ))}
-  </View>
+return (
+  <View style={styles.container}>
+    <View style={styles.profileCard}>
+      <Text style={styles.profileTitle}>{CURRENT_USER.name}'s Profile</Text>
+      <Text style={styles.profileSubtitle}>Weekly Study Sessions</Text>
+    </View>
 
-  );
+    <View style={styles.weekCard}>
+      <Text style={styles.weekTitle}>This Week</Text>
+
+      {DAYS.map((day) => (
+        <View key={day} style={styles.dayRow}>
+          <Text style={styles.dayText}>{day}</Text>
+          <Text style={styles.countText}>
+            {weeklyCounts[day] || 0} sessions
+          </Text>
+        </View>
+      ))}
+    </View>
+  </View>
+);
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  container: {
+    flex: 1,
+    backgroundColor: '#F2F4F8',
+    padding: 16,
+  },
+
+  profileCard: {
+    backgroundColor: '#1A1F36',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+  },
+
+  profileTitle: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: '700',
+  },
+
+  profileSubtitle: {
+    color: '#8892B0',
+    fontSize: 14,
+    marginTop: 6,
+  },
+
+  weekCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+  },
+
+  weekTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1F36',
+    marginBottom: 10,
+  },
+
+  dayRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF1F6',
+  },
+
+  dayText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1A1F36',
+  },
+
+  countText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#4A90D9',
+  },
 });
