@@ -2,14 +2,6 @@ import { View, Text, StyleSheet, FlatList } from 'react-native';
 import React, {useEffect, useState} from 'react';
 import FriendCard from '../components/FriendCard';
 
-// const testFriends = [
-//     { id: '1', username: 'andrew' },
-//     { id: '2', username: 'trevor' },
-//     { id: '3', username: 'arnav' },
-//     { id: '4', username: 'faris'},
-//     { id: '5', username: 'siran'}
-//   ];
-
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const CURRENT_USER_ID = 1;
 
@@ -40,7 +32,15 @@ export default function FriendsScreen() {
       <FlatList
         data={friends}
         keyExtractor={(item) => item.id}
-        renderItem={({item}) => <FriendCard username={item.username} />}
+        renderItem={({item}) => (
+          <FriendCard
+            username={item.username}
+            name={item.name}
+            hoursStudied={item.hoursStudied}
+            avatarURL={item.avatarURL}
+          />
+        )}
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );
