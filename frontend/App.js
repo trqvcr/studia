@@ -14,7 +14,24 @@ const Tab = createBottomTabNavigator();
 export default function App() {
   return (
     <NavigationContainer>
-      <Tab.Navigator>
+      <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+
+          //add badges to the different tabs, as well as focus highlight
+          if (route.name === 'Home' || route.name == "Friends" || route.name == "Profile") {
+            iconName = focused
+              ? 'information-circle'
+              : 'information-circle-outline';
+          }
+
+          return <Ionicons name={iconName} size={26} color={color} />;
+        },
+        tabBarActiveTintColor: 'tomato',
+        tabBarInactiveTintColor: 'gray',
+      })}
+    >
         <Tab.Screen name="Home" component={HomeScreen} />
         <Tab.Screen name="Friends" component={FriendsScreen} />
         <Tab.Screen name="Profile" component={ProfileScreen} />
