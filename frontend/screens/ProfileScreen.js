@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 
 const CURRENT_USER = { id: '1', username: 'alice', name: 'Alice' };
@@ -119,6 +120,12 @@ return (
 
     <View style={styles.weekCard}>
       <Text style={styles.weekTitle}>This Week</Text>
+      <TouchableOpacity
+      style={styles.refreshBtn}
+      onPress={loadWeeklySessions}
+    >
+      <Text style={styles.refreshBtnText}>Refresh</Text>
+    </TouchableOpacity>
 
       {DAYS.map((day) => (
         <View key={day} style={styles.dayRow}>
@@ -191,5 +198,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#4A90D9',
+  },
+  refreshBtn: {
+  backgroundColor: '#4A90D9',
+  paddingHorizontal: 12,
+  paddingVertical: 6,
+  borderRadius: 8,
+  },
+
+  refreshBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 13,
   },
 });
