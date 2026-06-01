@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { enableScreens } from 'react-native-screens';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
+import LoginScreen from './screens/LoginScreen';
 import HomeScreen from './screens/HomeScreen';
 import FriendsScreen from './screens/FriendsScreen';
 import ProfileScreen from './screens/ProfileScreen';
@@ -12,6 +14,13 @@ enableScreens(false);
 const Tab = createBottomTabNavigator();
 
 export default function App() {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+
+  if (!user) {
+    return <LoginScreen onLogin={(u, t) => { setUser(u); setToken(t); }} />;
+  }
+
   return (
     <NavigationContainer>
       <Tab.Navigator
@@ -19,7 +28,6 @@ export default function App() {
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
 
-          //add badges to the different tabs, as well as focus highlight
           if (route.name === 'Home' || route.name == "Friends" || route.name == "Profile") {
             iconName = focused
               ? 'information-circle'
@@ -32,7 +40,7 @@ export default function App() {
         tabBarInactiveTintColor: 'gray',
       })}
     >
-        <Tab.Screen name="Home" component={HomeScreen} />
+        <Tab.Screen name="Home">{props => <HomeScreen {...props} user={user} token={token} />}</Tab.Screen>
         <Tab.Screen name="Friends" component={FriendsScreen} />
         <Tab.Screen name="Profile" component={ProfileScreen} />
       </Tab.Navigator>

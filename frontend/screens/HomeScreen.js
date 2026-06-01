@@ -13,10 +13,6 @@ import {
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-// this is a temp user
-// eventually apps.js will receive current logged in user, and replace this with that user.
-const CURRENT_USER = { id: '1', username: 'alice', name: 'Alice' };
-
 function formatDuration(seconds) {
   if (seconds === null || seconds === undefined) return 'In progress...';
 
@@ -97,7 +93,7 @@ function SessionCard({ session }) {
   );
 }
 
-export default function HomeScreen() {
+export default function HomeScreen({ user, token }) {
   //session states
   const [sessions, setSessions] = useState([]);
   const [activeSession, setActiveSession] = useState(null);
@@ -142,7 +138,9 @@ export default function HomeScreen() {
 
   async function fetchSessions() {
     try {
-      const response = await fetch(`${API_URL}/sessions/${CURRENT_USER.id}`);
+      const response = await fetch(`${API_URL}/sessions/${user.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
       const data = await response.json();
 
       if (!response.ok) {
@@ -182,11 +180,9 @@ export default function HomeScreen() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          userId: CURRENT_USER.id,
-          subject,
-        }),
+        body: JSON.stringify({ subject }),
       });
 
       const data = await response.json();
@@ -216,10 +212,8 @@ export default function HomeScreen() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          userId: CURRENT_USER.id,
-        }),
       });
 
       const data = await response.json();
@@ -264,7 +258,7 @@ export default function HomeScreen() {
         ListHeaderComponent={
           <>
             <View style={styles.header}>
-              <Text style={styles.greeting}>Hey, {CURRENT_USER.name} 👋</Text>
+              <Text style={styles.greeting}>Hey, {user.name} 👋</Text>
               <Text style={styles.subGreeting}>Ready to study?</Text>
             </View>
 
