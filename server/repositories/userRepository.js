@@ -1,15 +1,9 @@
 const supabase = require('../db')
+const bcrypt = require('bcrypt')
 
 async function findByUsername(username) {
   const { data, error } = await supabase
     .from('users').select().eq('username', username).single()
-  if (error && error.code !== 'PGRST116') throw error
-  return data
-}
-
-async function findByCredentials(username, password) {
-  const { data, error } = await supabase
-    .from('users').select().eq('username', username).eq('password', password).single()
   if (error && error.code !== 'PGRST116') throw error
   return data
 }
@@ -36,10 +30,12 @@ async function findManyByIds(ids) {
 }
 
 async function create({ username, password, name }) {
+  const hashedPassword = await
+  bcrypt.hash(password, 10)
   const { data, error } = await supabase
-    .from('users').insert({ username, password, name }).select().single()
+    .from('users').insert({ username, password: hashedPassword, name }).select().single()
   if (error) throw error
   return data
 }
 
-module.exports = { findByUsername, findByCredentials, findById, searchByUsername, findManyByIds, create }
+module.exports = { findByUsername, findById, searchByUsername, findManyByIds, create }

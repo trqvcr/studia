@@ -5,10 +5,11 @@ const sessionRepo = require('../repositories/sessionRepository')
 // POST /sessions/start
 router.post('/start', async (req, res) => {
   console.log('POST /sessions/start', req.body);
-  const { userId, subject } = req.body;
+  const userId = req.user.id;
+  const {subject} = req.body;
 
-  if (!userId || !subject) {
-    return res.status(400).json({ error: 'userId and subject are required' });
+  if (!subject) {
+    return res.status(400).json({ error: 'subject is required' });
   }
 
   try {
@@ -26,18 +27,16 @@ router.post('/start', async (req, res) => {
 // POST /sessions/stop
 router.post('/stop', async (req, res) => {
   console.log('POST /sessions/stop', req.body);
-  const { userId } = req.body;
-
-  if (!userId) {
-    return res.status(400).json({ error: 'userId is required' });
-  }
+  const userId = req.user.id;
 
   try {
     const session = await sessionRepo.findActiveByUserId(userId)
     if (!session) return res.status(404).json({ error: 'No active session found for this user' })
 
     const endTime = new Date().toISOString()
-    const duration = Math.round((new Date(endTime) - new Date(session.startTime)) / 60000)
+    const duration = Math.floor(
+      (new Date(endTime) - new Date(session.start_time)) / 1000
+    );
     const updatedSession = await sessionRepo.stop(session.id, endTime, duration)
     res.json({ message: 'Session stopped', updatedSession })
   } catch (err) {
@@ -50,7 +49,9 @@ router.post('/stop', async (req, res) => {
 router.get('/:userId', async (req, res) => {
   console.log('GET /sessions/:userId', req.params.userId);
   const { userId } = req.params;
-
+if (parseInt(userId) !== req.user.id) {
+  return res.status(403).json({error: "Cannot view another user's sessions"});
+}
   try {
     const userSessions = await sessionRepo.findAllByUserId(userId)
     res.json({ sessions: userSessions })

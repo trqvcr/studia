@@ -24,10 +24,11 @@ router.get('/search', async (req, res) => {
 // POST /friends/add
 router.post('/add', async (req, res) => {
   console.log('POST /friends/add', req.body);
-  const { userId, friendId } = req.body;
+  const userId = req.user.id;
+  const { friendId } = req.body;
 
-  if (!userId || !friendId) {
-    return res.status(400).json({ error: 'userId and friendId are required' });
+  if (!friendId) {
+    return res.status(400).json({ error: 'friendId is required' });
   }
 
   if (userId === friendId) {
@@ -54,10 +55,11 @@ router.post('/add', async (req, res) => {
 
 // POST /friends/accept
 router.post('/accept', async (req, res) => {
-  const { userId, friendId } = req.body;
+  const userId = req.user.id;
+  const { friendId } = req.body;
 
-  if (!userId || !friendId) {
-    return res.status(400).json({ error: 'userId and friendId are required' });
+  if (!friendId) {
+    return res.status(400).json({ error: 'friendId is required' });
   }
 
   if (userId === friendId) {
@@ -65,10 +67,13 @@ router.post('/accept', async (req, res) => {
   }
 
   try {
-    const request = await friendshipRepo.findPendingByPair(friendId, userId)
+    const request = await friendshipRepo.findPendingByPair(userId, friendId)
     if (!request || request.status !== 'pending') return res.status(404).json({ error: 'Pending request not found' })
+    
+    if(Number(request.requester_id) === Number(userId))
+      return res.status(400).json({error: 'Cannot accept your own request'})
 
-    const friendship = await friendshipRepo.accept(friendId, userId)
+    const friendship = await friendshipRepo.accept(userId, friendId)
     res.json({ friendship })
   } catch (err) {
     console.error(err)
@@ -80,11 +85,13 @@ router.post('/accept', async (req, res) => {
 router.get('/:userId', async (req, res) => {
   console.log('GET /friends/:userId', req.params.userId);
   const { userId } = req.params;
-
+  if (parseInt(userId) !==req.user.id) {
+    return res.status(403).json({error: "Cannot view another user's friends"})
+  }
   try {
     const friendships = await friendshipRepo.findAcceptedByUserId(userId)
     const friendIds = friendships.map(f =>
-      f.user_id === parseInt(userId) ? f.friend_id : f.user_id
+      f.user_id_low === parseInt(userId) ? f.user_id_high : f.user_id_low
     )
     const friends = await userRepo.findManyByIds(friendIds)
     res.json({ friends })

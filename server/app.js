@@ -7,10 +7,11 @@ app.use(express.static(require('path').join(__dirname, 'public')));
 const authRoutes = require('./routes/auth');
 const sessionsRoutes = require('./routes/sessions');
 const friendsRoutes = require('./routes/friends');
+const requireAuth = require('./middleware/requireAuth');
 
 app.use('/auth', authRoutes);
-app.use('/sessions', sessionsRoutes);
-app.use('/friends', friendsRoutes);
+app.use('/sessions', requireAuth, sessionsRoutes);
+app.use('/friends', requireAuth, friendsRoutes);
 
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err.message);

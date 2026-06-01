@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const userRepo = require('../repositories/userRepository')
-
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcrypt')
 // POST /auth/register
 router.post('/register', async (req, res) => {
   console.log('POST /auth/register', req.body);
@@ -17,12 +18,14 @@ router.post('/register', async (req, res) => {
 
     const newUser = await userRepo.create({ username, password, name })
     const { password: _, ...safeUser } = newUser
-    res.status(201).json({ message: 'User registered', user: safeUser })
+    const token = jwt.sign({id: newUser.id}, process.env.JWT_SECRET, {expiresIn: '7d'})
+    res.status(201).json({ message: 'User registered', user: safeUser, token })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Database error' })
   }
 });
+
 
 // POST /auth/login
 router.post('/login', async (req, res) => {
@@ -34,11 +37,14 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    const user = await userRepo.findByCredentials(username, password)
+    const user = await userRepo.findByUsername(username)
     if (!user) return res.status(401).json({ error: 'Invalid credentials' })
 
+    const passwordMatches = await bcrypt.compare(password, user.password)
+    if (!passwordMatches) return res.status(401).json({error: 'Invalid credentials'})
     const { password: _, ...safeUser } = user
-    res.json({ message: 'Login successful', user: safeUser })
+    const token = jwt.sign({id: user.id}, process.env.JWT_SECRET, {expiresIn: '7d'})
+    res.json({ message: 'Login successful', user: safeUser, token })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Database error' })
