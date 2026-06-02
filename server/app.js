@@ -8,7 +8,9 @@ const authRoutes = require('./routes/auth');
 const sessionsRoutes = require('./routes/sessions');
 const friendsRoutes = require('./routes/friends');
 const requireAuth = require('./middleware/requireAuth');
+const profileRoutes = require('./routes/profile');
 
+app.use('/profile', requireAuth, profileRoutes);
 app.use('/auth', authRoutes);
 app.use('/sessions', requireAuth, sessionsRoutes);
 app.use('/friends', requireAuth, friendsRoutes);

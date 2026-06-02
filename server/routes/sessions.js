@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const sessionRepo = require('../repositories/sessionRepository')
-
+const userRepo = require('../repositories/userRepository')
 // POST /sessions/start
 router.post('/start', async (req, res) => {
   console.log('POST /sessions/start', req.body);
@@ -11,7 +11,10 @@ router.post('/start', async (req, res) => {
   if (!subject) {
     return res.status(400).json({ error: 'subject is required' });
   }
-
+  const userClasses=await userRepo.getClasses(userId)
+  if(!userClasses.includes(subject)){
+    return res.status(400).json({error: 'subject must be one of your classes'})
+  }
   try {
     const alreadyActive = await sessionRepo.findActiveByUserId(userId)
     if (alreadyActive) return res.status(409).json({ error: 'User already has an active session' })

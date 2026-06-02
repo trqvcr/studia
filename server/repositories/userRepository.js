@@ -38,4 +38,18 @@ async function create({ username, password, name }) {
   return data
 }
 
-module.exports = { findByUsername, findById, searchByUsername, findManyByIds, create }
+module.exports = { findByUsername, findById, searchByUsername, findManyByIds, create, getClasses, setClasses }
+
+async function getClasses(userId){
+  const {data, error} = await supabase
+  .from('users').select('classes').eq('id', userId).single()
+  if (error) throw error
+  return data.classes
+}
+
+async function setClasses(userId, classes){
+  const {data, error} = await supabase
+  .from('users').update({classes}).eq('id', userId).select('classes').single()
+  if (error) throw error
+  return data.classes
+}
