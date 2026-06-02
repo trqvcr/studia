@@ -81,12 +81,12 @@ function SessionCard({ session }) {
       </View>
 
       <Text style={styles.sessionDate}>
-        Started {formatDate(session.start_time)}
+        Started {formatDate(session.startTime)}
       </Text>
 
-      {!isActive && session.end_time && (
+      {!isActive && session.endTime && (
         <Text style={styles.sessionDate}>
-          Ended {formatDate(session.end_time)}
+          Ended {formatDate(session.endTime)}
         </Text>
       )}
     </View>
@@ -126,8 +126,9 @@ export default function HomeScreen({ user, token }) {
     }
 
     //every second, update liveElapsedTime
+    console.log('activeSession:', JSON.stringify(activeSession));
     const intervalId = setInterval(() => {
-    const elapsed = Date.now() - new Date(activeSession.start_time).getTime();
+    const elapsed = Date.now() - new Date(activeSession.startTime).getTime();
       setLiveElapsedTime(elapsed);
     }, 1000);
 
@@ -149,7 +150,7 @@ export default function HomeScreen({ user, token }) {
       }
 
       const sortedSessions = (data.sessions || []).sort((a, b) => {
-        return new Date(b.start_time) - new Date(a.start_time);
+        return new Date(b.startTime) - new Date(a.startTime);
       });
 
       setSessions(sortedSessions);
@@ -274,7 +275,7 @@ export default function HomeScreen({ user, token }) {
                     </Text>
 
                     <Text style={styles.activeSessionSince}>
-                      Since {formatTime(activeSession.start_time)}
+                      Since {formatTime(activeSession.startTime)}
                     </Text>
                     <Text>
                       Elapsed: {formatLiveTime(liveElapsedTime)}

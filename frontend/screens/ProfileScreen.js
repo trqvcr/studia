@@ -58,11 +58,11 @@ function countSessions(sessions, startOfWeek, endOfWeek) {
 
   //for every session within startOfWeek-endOfWeek, increase it's corresponding day by 1
   sessions.forEach( (session) => {
-    const sessionDate = new Date(session.start_time);
+    const sessionDate = new Date(session.startTime);
 
     if(sessionDate >= startOfWeek && sessionDate <= endOfWeek) {
       const sessionDay = DAYS[sessionDate.getDay()];
-      counts[sessionDay] +=1;
+      counts[sessionDay] += session.duration;
     }
 
   });
@@ -70,6 +70,27 @@ function countSessions(sessions, startOfWeek, endOfWeek) {
   return counts
 
 }
+
+//helper for formatting session duration
+function formatDuration(seconds) {
+  if (seconds === null || seconds === undefined) return 'In progress...';
+
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+
+  if (hours > 0) {
+    return `${hours}h ${mins}m ${secs}s`;
+  }
+
+  if (mins > 0) {
+    return `${mins}m ${secs}s`;
+  }
+
+  return `${secs}s`;
+}
+
 
 export default function ProfileScreen({ user, token, onLogout, navigation, onUpdateUser }) {
   const [weeklyCounts, setWeeklyCounts] = useState({});
@@ -233,7 +254,7 @@ return (
         <View key={day} style={styles.dayRow}>
           <Text style={styles.dayText}>{day}</Text>
           <Text style={styles.countText}>
-            {weeklyCounts[day] || 0} sessions
+            Time studied: {formatDuration(weeklyCounts[day]) || 0}
           </Text>
         </View>
       ))}
