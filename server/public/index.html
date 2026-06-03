@@ -41,7 +41,7 @@
         <input id="reg-password" placeholder="password" type="password" />
         <input id="reg-name" placeholder="name" />
       </div>
-      <button onclick="send('POST','/auth/register',{username:v('reg-username'),password:v('reg-password'),name:v('reg-name')},'res-register')">Send</button>
+      <button id = "btn-register" onclick="send('POST','/auth/register',{username:v('reg-username'),password:v('reg-password'),name:v('reg-name')},'res-register')">Send</button>
       <div class="response" id="res-register"></div>
     </div>
 
@@ -54,7 +54,7 @@
         <input id="login-username" placeholder="username" />
         <input id="login-password" placeholder="password" type="password" />
       </div>
-      <button onclick="send('POST','/auth/login',{username:v('login-username'),password:v('login-password')},'res-login')">Send</button>
+      <button id = "btn-login" onclick="send('POST','/auth/login',{username:v('login-username'),password:v('login-password')},'res-login')">Send</button>
       <div class="response" id="res-login"></div>
     </div>
   </div>
