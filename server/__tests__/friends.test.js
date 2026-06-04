@@ -1,118 +1,142 @@
-const request = require('supertest');
-const app = require('../app');
-const supabase = require('../db');
+process.env.JWT_SECRET='test'
+process.env.SUPABASE_URL='http://localhost:54321'
+process.env.SUPABASE_KEY='test'
+jest.mock('../repositories/userRepository')
+jest.mock('../repositories/friendshipRepository')
 
-let token1, token2, userId1, userId2
+const jwt = require('jsonwebtoken')
+const request = require('supertest')
+const app = require('../app')
+const userRepo = require('../repositories/userRepository')
+const friendshipRepo = require('../repositories/friendshipRepository')
 
-beforeAll(async () => {
-  const [res1, res2] = await Promise.all([
-    request(app).post('/auth/login').send({ username: 'alice', password: 'pass123' }),
-    request(app).post('/auth/login').send({ username: 'bob', password: 'pass123' }),
-  ])
-  token1 = res1.body.token; userId1 = res1.body.user.id
-  token2 = res2.body.token; userId2 = res2.body.user.id
+const token1 = jwt.sign({id: 1}, process.env.JWT_SECRET)
+const token2 = jwt.sign({id: 2}, process.env.JWT_SECRET)
 
-  // clean up any leftover alice-bob friendship from previous runs
-  const low = Math.min(userId1, userId2)
-  const high = Math.max(userId1, userId2)
-  await supabase.from('friendships').delete().eq('user_id_low', low).eq('user_id_high', high)
-})
+beforeEach(() => jest.resetAllMocks())
 
 describe('GET /friends/search', () => {
   test('finds users matching the search query', async () => {
+    userRepo.searchByUsername.mockResolvedValue([
+      { id: 2, username: 'alice', name: 'Alice' }
+    ])
+
     const res = await request(app)
       .get('/friends/search?username=ali')
       .set('Authorization', `Bearer ${token1}`)
 
-    expect(res.statusCode).toBe(200);
-    expect(res.body.users.length).toBeGreaterThan(0);
-    expect(res.body.users[0].username).toBe('alice');
-  });
+    expect(res.statusCode).toBe(200)
+    expect(res.body.users.length).toBeGreaterThan(0)
+    expect(res.body.users[0].username).toBe('alice')
+  })
 
   test('returns 400 when username param is missing', async () => {
     const res = await request(app)
       .get('/friends/search')
       .set('Authorization', `Bearer ${token1}`)
 
-    expect(res.statusCode).toBe(400);
-  });
+    expect(res.statusCode).toBe(400)
+  })
 
   test('returns empty array when no users match', async () => {
+    userRepo.searchByUsername.mockResolvedValue([])
+
     const res = await request(app)
       .get('/friends/search?username=zzznomatch')
       .set('Authorization', `Bearer ${token1}`)
 
-    expect(res.statusCode).toBe(200);
-    expect(res.body.users).toHaveLength(0);
-  });
-});
+    expect(res.statusCode).toBe(200)
+    expect(res.body.users).toHaveLength(0)
+  })
+})
 
 describe('POST /friends/add', () => {
   test('adds a new friend successfully', async () => {
+    userRepo.findById.mockResolvedValue({ id: 2, username: 'bob' })
+    friendshipRepo.findByPair.mockResolvedValue(null)
+    friendshipRepo.create.mockResolvedValue({ id: 1, status: 'pending' })
+
     const res = await request(app)
       .post('/friends/add')
       .set('Authorization', `Bearer ${token1}`)
-      .send({ friendId: userId2 });
+      .send({ friendId: 2 })
 
-    expect(res.statusCode).toBe(201);
-    expect(res.body.message).toBe('Friend added');
-  });
+    expect(res.statusCode).toBe(201)
+    expect(res.body.message).toBe('Friend added')
+  })
 
   test('returns 409 when request already pending', async () => {
+    userRepo.findById.mockResolvedValue({ id: 2, username: 'bob' })
+    friendshipRepo.findByPair.mockResolvedValue({ status: 'pending' })
+
     const res = await request(app)
       .post('/friends/add')
       .set('Authorization', `Bearer ${token1}`)
-      .send({ friendId: userId2 });
+      .send({ friendId: 2 })
 
-    expect(res.statusCode).toBe(409);
-  });
+    expect(res.statusCode).toBe(409)
+  })
 
   test('returns 400 when adding yourself', async () => {
     const res = await request(app)
       .post('/friends/add')
       .set('Authorization', `Bearer ${token1}`)
-      .send({ friendId: userId1 });
+      .send({ friendId: 1 })
 
-    expect(res.statusCode).toBe(400);
-  });
+    expect(res.statusCode).toBe(400)
+  })
 
   test('returns 404 when friend does not exist', async () => {
+    userRepo.findById.mockResolvedValue(null)
+
     const res = await request(app)
       .post('/friends/add')
       .set('Authorization', `Bearer ${token1}`)
-      .send({ friendId: 99999 });
+      .send({ friendId: 99999 })
 
-    expect(res.statusCode).toBe(404);
-  });
-});
+    expect(res.statusCode).toBe(404)
+  })
+})
 
 describe('POST /friends/accept', () => {
   test('accepts a pending friend request', async () => {
+    friendshipRepo.findPendingByPair.mockResolvedValue({
+      id: 1, status: 'pending', requester_id: 1
+    })
+    friendshipRepo.accept.mockResolvedValue({ id: 1, status: 'accepted' })
+
     const res = await request(app)
       .post('/friends/accept')
       .set('Authorization', `Bearer ${token2}`)
-      .send({ friendId: userId1 });
+      .send({ friendId: 1 })
 
-    expect(res.statusCode).toBe(200);
-  });
-});
+    expect(res.statusCode).toBe(200)
+  })
+})
 
 describe('GET /friends/:userId', () => {
   test('returns friends list for a user', async () => {
+    friendshipRepo.findAcceptedByUserId.mockResolvedValue([
+      { user_id_low: 1, user_id_high: 2 }
+    ])
+    userRepo.findManyByIds.mockResolvedValue([
+      { id: 2, username: 'bob', name: 'Bob' }
+    ])
+
     const res = await request(app)
-      .get(`/friends/${userId1}`)
+      .get('/friends/1')
       .set('Authorization', `Bearer ${token1}`)
 
-    expect(res.statusCode).toBe(200);
-    expect(Array.isArray(res.body.friends)).toBe(true);
-    expect(res.body.friends.length).toBeGreaterThan(0);
-  });
+    expect(res.statusCode).toBe(200)
+    expect(Array.isArray(res.body.friends)).toBe(true)
+    expect(res.body.friends.length).toBeGreaterThan(0)
+  })
 
   test('returns 403 when accessing another users friends', async () => {
     const res = await request(app)
-      .get(`/friends/${userId2}`)
+      .get('/friends/2')
       .set('Authorization', `Bearer ${token1}`)
 
-    expect(res.statusCode).toBe(403);
-  });
-});
+    expect(res.statusCode).toBe(403)
+  })
+})
