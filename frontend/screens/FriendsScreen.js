@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Image } from 'react-native';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {useFocusEffect} from '@react-navigation/native';
 import FriendCard from '../components/FriendCard';
 import FriendProfile from '../components/FriendProfile';
 
@@ -13,9 +14,9 @@ export default function FriendsScreen({ user, token }) {
   const [userSelected, setUserSelected] = useState(null);
   const debounceRef = useRef(null); 
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     loadFriends();
-  }, []);
+  }, []));
 
   async function loadFriends(){
     try{
