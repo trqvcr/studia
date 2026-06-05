@@ -7,12 +7,15 @@ import FriendProfile from '../components/FriendProfile';
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const DEFAULT_AVATAR = require('../assets/default-avatar.png');
 
+//while on friends screen, update friends list every five seconds
+//and display their profile
 export default function FriendsScreen({ user, token }) {
   const [friends, setFriends] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
   const [userSelected, setUserSelected] = useState(null);
-  const debounceRef = useRef(null); 
+  const debounceRef = useRef(null);
 
   useFocusEffect(useCallback(() => {
     loadFriends();
@@ -35,10 +38,13 @@ export default function FriendsScreen({ user, token }) {
     setSearchQuery(text);
     if(!text.trim()){
       setSearchResults([]);
+      setSearching(false);
       return;
     }
 
-    if(debounceRef.current){ 
+    setSearching(true);
+
+    if(debounceRef.current){
       clearTimeout(debounceRef.current);
     }
 
@@ -52,6 +58,8 @@ export default function FriendsScreen({ user, token }) {
       }
       catch(err){
         console.error('ERROR: search users error', err);
+      } finally {
+        setSearching(false);
       }
     }, 500);
   }
@@ -64,7 +72,7 @@ export default function FriendsScreen({ user, token }) {
 
   if(userSelected){
     return (
-      <FriendProfile 
+      <FriendProfile
         user={user}
         friend={userSelected}
         token={token}
@@ -85,40 +93,34 @@ export default function FriendsScreen({ user, token }) {
       </View>
 
       {
-        searchResults.length > 0 && (
-          <View>
-            <FlatList
-              data={searchResults}
-              keyExtractor={(item) => String(item.id)}
-              renderItem={({item}) => (
-                <TouchableOpacity onPress={() => openProfile(item)}>
-                  {/* <Image source={item.avatar_url ? { uri: item.avatar_url } : DEFAULT_AVATAR} style={styles.avatar}/>
-                  <View>
-                    <Text>{item.name}</Text>
-                    <Text>@{item.username}</Text>
-                  </View> */}
-
-                <View style={styles.card}>
-
-                
-                  <View style={styles.buffer}>
-                    <Image
-                      source={item.avatar_url ? { uri: item.avatar_url } : DEFAULT_AVATAR}
-                      style={styles.avatar}
-                    />
-                  </View>
-                  
-                  <View style={styles.columnText}>
-            
-                    <Text style={styles.name}>
-                      {item.name} | @{item.username}
-                    </Text>
-                  </View>
-                </View>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
+        searchQuery.trim().length > 0 && (
+          searchResults.length > 0 ? (
+            <View>
+              <FlatList
+                data={searchResults}
+                keyExtractor={(item) => String(item.id)}
+                renderItem={({item}) => (
+                  <TouchableOpacity onPress={() => openProfile(item)}>
+                    <View style={styles.card}>
+                      <View style={styles.buffer}>
+                        <Image
+                          source={item.avatar_url ? { uri: item.avatar_url } : DEFAULT_AVATAR}
+                          style={styles.avatar}
+                        />
+                      </View>
+                      <View style={styles.columnText}>
+                        <Text style={styles.name}>
+                          {item.name} | @{item.username}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          ) : (
+            !searching && <Text style={styles.noResults}>No users found</Text>
+          )
         )
       }
 
@@ -182,6 +184,12 @@ const styles = StyleSheet.create({
   columnText: {
     justifyContent: 'center',
     alignItems: 'flex-start'
+  },
+  noResults: {
+    textAlign: 'center',
+    color: '#8892B0',
+    fontSize: 15,
+    marginTop: 24,
   },
   name: {
     fontWeight: 'bold',

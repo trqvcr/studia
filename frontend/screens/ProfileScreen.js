@@ -136,7 +136,7 @@ export default function ProfileScreen({ user, token, onLogout, navigation, onUpd
     }
     catch(err){
       console.log('ERROR: could not accept friend request');
-      Alert.alert('server error', 'could not reach server'); 
+      Alert.alert('server error', 'could not reach server');
     }
   }
 
@@ -158,7 +158,8 @@ export default function ProfileScreen({ user, token, onLogout, navigation, onUpd
       Alert.alert('server error', 'could not reach server');
     }
   }
-  
+
+
   function getAvatarSource() {
     if(previewURI) 
       return {uri: previewURI};
@@ -332,8 +333,11 @@ return (
   <View style={styles.container}>
 
     <TouchableOpacity style={styles.notificationCard} onPress={() => setFriendRequestsVisible(true)}>
-      <Text style={styles.notificationText}>Notifications</Text>
-      <Text style={styles.notificationText}>{friendRequests.length} Unread</Text>
+      <Text style={styles.notificationText}>🔔 Friend Requests</Text>
+      {friendRequests.length > 0
+        ? <View style={styles.notificationBadge}><Text style={styles.notificationBadgeText}>{friendRequests.length}</Text></View>
+        : <Text style={styles.notificationTextMuted}>None</Text>
+      }
     </TouchableOpacity>
 
     <View style={styles.profileCard}>
@@ -347,7 +351,7 @@ return (
 
         <View style={styles.stats}>
           <TouchableOpacity onPress={() => navigation.navigate('Friends')}>
-            <Text style={styles.stat}>{friendCount} Friends</Text>
+            <Text style={styles.stat}>{friendCount} {friendCount === 1 ? "Friend" : "Friends"}</Text>
           </TouchableOpacity>
         </View>
 
@@ -372,14 +376,17 @@ return (
         <Text style={styles.refreshBtnText}>Refresh</Text>
       </TouchableOpacity>
 
-      {DAYS.map((day) => (
-        <View key={day} style={styles.dayRow}>
-          <Text style={styles.dayText}>{day}</Text>
-          <Text style={styles.countText}>
-            Time studied: {formatDuration(weeklyCounts[day]) || 0}
-          </Text>
-        </View>
-      ))}
+      {DAYS.map((day) => {
+        const isToday = day === DAYS[new Date().getDay()];
+        return (
+          <View key={day} style={[styles.dayRow, isToday && styles.dayRowToday]}>
+            <Text style={[styles.dayText, isToday && styles.dayTextToday]}>{day}</Text>
+            <Text style={styles.countText}>
+              Time studied: {formatDuration(weeklyCounts[day]) || 0}
+            </Text>
+          </View>
+        );
+      })}
     </View>
 
     <TouchableOpacity style={styles.logoutBtn} onPress={onLogout}>
@@ -465,33 +472,28 @@ return (
               <View style={styles.profileCardFriend}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Image source={item.avatar_url ? { uri: item.avatar_url } : DEFAULT_AVATAR} style={styles.avatar} />
-                  <View style={{padding: 12}}>
-                    <Text style={styles.profileName}>{item.name}</Text>
+                  <View style={{ paddingHorizontal: 12 }}>
+                    <Text style={styles.friendRequestName}>{item.name}</Text>
                     <Text style={styles.profileUsername}>@{item.username}</Text>
                   </View>
                 </View>
 
-                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 }}>
-                  <TouchableOpacity onPress={() => acceptRequest(item.id)}>
-                    <Text style={styles.modalButtonText}>Accept</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                  <TouchableOpacity style={styles.acceptButton} onPress={() => acceptRequest(item.id)}>
+                    <Text style={styles.acceptButtonText}>Accept</Text>
                   </TouchableOpacity>
-
-                  <TouchableOpacity onPress={() => declineRequest(item.id)}>
-                    <Text style={styles.modalButtonText}>Decline</Text>
+                  <TouchableOpacity style={styles.declineButton} onPress={() => declineRequest(item.id)}>
+                    <Text style={styles.declineButtonText}>Decline</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             )}
-            ListEmptyComponent={<Text>No Friend Requests</Text>}
-          />          
+            ListEmptyComponent={<Text style={styles.emptyText}>No pending friend requests</Text>}
+          />
 
-          <View style={styles.modalButton}>
-            <TouchableOpacity
-              onPress={() => setFriendRequestsVisible(false)}
-            >
-              <Text style={styles.modalButtonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.closeButton} onPress={() => setFriendRequestsVisible(false)}>
+            <Text style={styles.closeButtonText}>Close</Text>
+          </TouchableOpacity>
 
         </View>
 
@@ -509,21 +511,37 @@ const styles = StyleSheet.create({
   },
 
   notificationCard: {
-    backgroundColor: '#8892B070',
-    borderRadius: 8,
-    borderColor: '#8892B070',
-    borderWidth: 1,
-    padding: 8,
+    backgroundColor: '#EAF4FF',
+    borderRadius: 12,
+    padding: 14,
     marginBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    display: 'flex',
     justifyContent: 'space-between',
   },
 
   notificationText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1A1F36',
+  },
+
+  notificationTextMuted: {
     fontSize: 14,
-    color: 'black',
+    color: '#8892B0',
+  },
+
+  notificationBadge: {
+    backgroundColor: '#4A90D9',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+  },
+
+  notificationBadgeText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
   },
 
   profileCard: {
@@ -536,12 +554,69 @@ const styles = StyleSheet.create({
   },
 
   profileCardFriend: {
-    backgroundColor: '#1A1F36',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    flexDirection: 'column',
+    backgroundColor: '#F8F9FC',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E0E4EF',
+  },
+
+  friendRequestName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A1F36',
+  },
+
+  acceptButton: {
+    flex: 1,
+    backgroundColor: '#4A90D9',
+    borderRadius: 10,
+    paddingVertical: 10,
     alignItems: 'center',
+  },
+
+  acceptButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+
+  declineButton: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E05252',
+  },
+
+  declineButtonText: {
+    color: '#E05252',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+
+  emptyText: {
+    textAlign: 'center',
+    color: '#8892B0',
+    fontSize: 15,
+    marginVertical: 24,
+  },
+
+  closeButton: {
+    backgroundColor: '#F2F4F8',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+
+  closeButtonText: {
+    color: '#1A1F36',
+    fontWeight: '600',
+    fontSize: 15,
   },
 
   profileInfo: {
@@ -603,8 +678,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'white',
     borderRadius: 16,
-    borderColor: 'dimgray',
-    borderWidth: 2,
     padding: 20,
     marginHorizontal: 16,
     marginVertical: 80,
@@ -703,6 +776,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#1A1F36',
+  },
+
+  dayRowToday: {
+    backgroundColor: '#EAF4FF',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+  },
+
+  dayTextToday: {
+    color: '#4A90D9',
+    fontWeight: '700',
   },
 
   countText: {

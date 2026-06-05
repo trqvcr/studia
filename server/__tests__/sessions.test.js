@@ -82,6 +82,7 @@ describe('POST /sessions/stop', () => {
     const res = await request(app)
       .post('/sessions/stop')
       .set('Authorization', `Bearer ${token1}`)
+      .send({})
 
     expect(res.statusCode).toBe(200)
     expect(res.body.updatedSession.active).toBe(false)
@@ -121,5 +122,23 @@ describe('GET /sessions/:userId', () => {
       .set('Authorization', `Bearer ${token1}`)
 
     expect(res.statusCode).toBe(403)
+  })
+})
+
+describe('DELETE /sessions/:sessionId', () => {
+  test('deletes a session successfully', async () => {
+    sessionRepo.deleteById.mockResolvedValue()
+
+    const res = await request(app)
+      .delete('/sessions/1')
+      .set('Authorization', `Bearer ${token1}`)
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.message).toBe('Session deleted')
+  })
+
+  test('returns 401 without token', async () => {
+    const res = await request(app).delete('/sessions/1')
+    expect(res.statusCode).toBe(401)
   })
 })

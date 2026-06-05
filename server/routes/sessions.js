@@ -36,12 +36,14 @@ router.post('/stop', async (req, res) => {
     const session = await sessionRepo.findActiveByUserId(userId)
     console.log('active session:', session)
     if (!session) return res.status(404).json({ error: 'No active session found for this user' })
-
-    const endTime = new Date().toISOString()
+    const notes = typeof req.body.notes === 'string' ? req.body.notes.trim() : null;
+    const requestedEndTime = req.body.endTime
+      ? new Date(req.body.endTime) : new Date();
+    const endTime = requestedEndTime.toISOString()
     const duration = Math.floor(
       (new Date(endTime) - new Date(session.startTime)) / 1000
     );
-    const updatedSession = await sessionRepo.stop(session.id, endTime, duration)
+    const updatedSession = await sessionRepo.stop(session.id, endTime, duration, notes)
     res.json({ message: 'Session stopped', updatedSession })
   } catch (err) {
     console.error(err)
@@ -59,6 +61,22 @@ if (parseInt(userId) !== req.user.id) {
   try {
     const userSessions = await sessionRepo.findAllByUserId(userId)
     res.json({ sessions: userSessions })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Database error' })
+  }
+});
+
+// DELETE /sessions/:sessionId
+router.delete('/:sessionId', async (req, res) => {
+  const userId = req.user.id;
+  const { sessionId } = req.params;
+
+  console.log('DELETE /sessions/:sessionId', { sessionId, userId });
+
+  try {
+    await sessionRepo.deleteById(sessionId, userId)
+    res.json({ message: 'Session deleted' })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Database error' })

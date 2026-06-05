@@ -5,7 +5,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const DEFAULT_AVATAR = require('../assets/default-avatar.png');
 
 export default function FriendProfile({ user, friend, token, exitProfile}){
-    const [friendProfile, setFriendProfile] = useState(null);
+    const [friendProfile, setFriendProfile] = useState({ user: friend, status: null, friendCount: null });
     const [sendingRequest, setSendingRequest] = useState(false);
 
     useEffect(() => {
@@ -19,8 +19,7 @@ export default function FriendProfile({ user, friend, token, exitProfile}){
             }
             catch (err){
                 console.error('ERROR: could not fetch user;', err);
-                exitProfile();
-            } 
+            }
         };
         loadFriends();
     }, []);
@@ -76,9 +75,6 @@ export default function FriendProfile({ user, friend, token, exitProfile}){
         }
     }
 
-    if(!friendProfile)
-        return <View style={styles.container}/>;
-    
     let buttonText = 'Request Friend';
     let disableButton = false;
     const buttonHandler = (friendProfile.status === 'pending' && !friendProfile.isRequester) ? acceptFriendRequest : sendFriendRequest;
@@ -101,7 +97,7 @@ export default function FriendProfile({ user, friend, token, exitProfile}){
                 onPress={exitProfile}
                 style={styles.exitButton}
             >
-                <Text>X</Text>
+                <Text style={styles.exitButtonText}>✕</Text>
             </TouchableOpacity>
 
             <View style={styles.profileCard}>
@@ -122,6 +118,7 @@ export default function FriendProfile({ user, friend, token, exitProfile}){
             <TouchableOpacity
                 onPress={buttonHandler}
                 disabled={disableButton || sendingRequest}
+                style={[styles.reqButton, (disableButton || sendingRequest) && styles.reqButtonDisabled]}
             >
                 <Text style={styles.reqButtonText}>{buttonText}</Text>
             </TouchableOpacity>
@@ -135,15 +132,20 @@ const styles = StyleSheet.create({
     },
 
     exitButton:{
-        fontSize: 18,
-        borderWidth: 1,
-        borderColor: 'black',
-        borderRadius: 18,
         alignSelf: 'flex-start',
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        margin: 4,
-        backgroundColor: '#b4b4b4',
+        margin: 12,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#F2F4F8',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    exitButtonText: {
+        fontSize: 16,
+        color: '#1A1F36',
+        fontWeight: '600',
     },
 
     profileCard: {
@@ -189,13 +191,22 @@ const styles = StyleSheet.create({
         color: '#8892B0'
     },
 
-    reqButtonText: {
-        alignSelf: 'center',
-        borderWidth: 1,
-        borderRadius: 8,
-        borderColor: 'black',
+    reqButton: {
+        backgroundColor: '#4A90D9',
+        borderRadius: 12,
+        paddingVertical: 14,
+        marginHorizontal: 16,
+        marginTop: 12,
+        alignItems: 'center',
+    },
+
+    reqButtonDisabled: {
         backgroundColor: '#8892B0',
-        padding: 4,
-        margin: 4,
+    },
+
+    reqButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '700',
     },
 });

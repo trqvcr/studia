@@ -36,8 +36,8 @@ export default function App() {
 
           return <Ionicons name={iconName} size={26} color={color} />;
         },
-        tabBarActiveTintColor: 'tomato',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: '#4A90D9',
+        tabBarInactiveTintColor: '#8892B0',
       })}
     >
         <Tab.Screen name="Home">{props => <HomeScreen {...props} user={user} token={token} />}</Tab.Screen>

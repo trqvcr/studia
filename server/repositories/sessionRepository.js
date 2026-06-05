@@ -8,6 +8,7 @@ function normalize(row) {
     startTime: row.start_time,
     endTime: row.end_time,
     duration: row.duration,
+    notes: row.notes || '',
     active: row.active
   }
 }
@@ -28,10 +29,10 @@ async function create({ userId, subject, startTime }) {
   return normalize(data)
 }
 
-async function stop(id, endTime, duration) {
+async function stop(id, endTime, duration, notes) {
   const { data, error } = await supabase
     .from('sessions')
-    .update({ end_time: endTime, duration, active: false })
+    .update({ end_time: endTime, duration, notes, active: false })
     .eq('id', id)
     .select().single()
   if (error) throw error
@@ -45,4 +46,12 @@ async function findAllByUserId(userId) {
   return data.map(normalize)
 }
 
-module.exports = { findActiveByUserId, create, stop, findAllByUserId }
+async function deleteById(id, userId) {
+  const { error } = await supabase
+    .from('sessions').delete().eq('id', Number(id)).eq('user_id', Number(userId)).select();
+  if (error) throw error
+
+  console.log('deleteById id:', id, 'userId:', userId);
+
+}
+module.exports = { findActiveByUserId, create, stop, findAllByUserId, deleteById }
