@@ -48,8 +48,10 @@ async function findAllByUserId(userId) {
 
 async function deleteById(id, userId) {
   const { error } = await supabase
-    .from('sessions').delete().eq('id', id).eq('user_id', userId)
+    .from('sessions').delete().eq('id', Number(id)).eq('user_id', Number(userId)).select();
   if (error) throw error
-}
 
+  console.log('deleteById id:', id, 'userId:', userId);
+
+}
 module.exports = { findActiveByUserId, create, stop, findAllByUserId, deleteById }

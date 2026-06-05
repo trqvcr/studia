@@ -72,6 +72,8 @@ router.delete('/:sessionId', async (req, res) => {
   const userId = req.user.id;
   const { sessionId } = req.params;
 
+  console.log('DELETE /sessions/:sessionId', { sessionId, userId });
+
   try {
     await sessionRepo.deleteById(sessionId, userId)
     res.json({ message: 'Session deleted' })

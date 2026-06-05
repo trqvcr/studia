@@ -126,6 +126,9 @@ export default function HomeScreen({ user, token }) {
   const [sessionNotes, setSessionNotes] = useState('');
   const [pendingNoteInputTime, setPendingNoteInputTime] = useState(null);
 
+  //when user wants to discard a session
+  const [discardSession, setDiscardSession] = useState(false);
+
   //paused time(when in notes state)
   const [totalPausedMs, setTotalPausedMs] = useState(0);
 
@@ -419,7 +422,60 @@ export default function HomeScreen({ user, token }) {
     );
   }
 
+  async function handleCancelSession() {
+    setSessionLoading(true);
+
+    console.log("sessionNotes before sav:", sessionNotes);
+    console.log("notes sent to db:", sessionNotes.trim() || null);
+
+    try {
+      const response = await fetch(`${API_URL}/sessions/${activeSession.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          canceled: true,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        Alert.alert('Could not stop session', data.error || 'Something went wrong');
+        return;
+      }
+
+      setShowEndNotes(false);
+      setSessionNotes('');
+      setPendingNoteInputTime(null);
+      setTotalPausedMs(0);
+      setLiveElapsedTime(0);
+
+      await fetchSessions();
+    } catch (err) {
+      console.error('Stop session error:', err);
+      Alert.alert('Connection error', 'Could not reach the server.');
+    } finally {
+      setSessionLoading(false);
+    }
+  }
+
   //if user isn't in note phase, just show end button under session so that they can enter it
+  function showCancelSessionButton() {
+    return (
+      <TouchableOpacity
+        style={[styles.sessionBtn, styles.sessionBtnCancel]}
+        onPress={handleCancelSession}
+        disabled={sessionLoading}
+      >
+        <Text style={styles.sessionBtnText}>Discard Session</Text>
+      </TouchableOpacity>
+    );
+  }
+
+
+
   function showEndSessionButton() {
     return (
       <TouchableOpacity
@@ -434,7 +490,12 @@ export default function HomeScreen({ user, token }) {
 
   function handleEndSessionWithNotes() {
     if(!showEndNotes) {
-      return showEndSessionButton();
+    return(
+      <View style = {styles.endSessionStack}>
+        {showEndSessionButton()}
+        {showCancelSessionButton()}
+      </View>
+    );
     }
 
     return (
@@ -685,6 +746,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#E05252',
   },
 
+  sessionBtnCancel: {
+    backgroundColor: '#E05252',
+  },
+
   sessionBtnText: {
     color: '#fff',
     fontSize: 16,
@@ -869,6 +934,11 @@ const styles = StyleSheet.create({
   },
   endSessionNotesBox: {
     marginTop: 4,
+  },
+
+  endSessionStack: {
+  marginTop: 10,
+  gap: 8,
   },
 
   notesLabel: {
