@@ -100,6 +100,19 @@ router.post('/avatar', requireAuth, upload.single('avatarImage'), async (req, re
   }
 });
 
+// DELETE /auth/avatar
+router.delete('/avatar', requireAuth, async (req, res) => {
+  const userId = req.user.id;
+  try {
+    const updated = await userRepo.updateById(userId, { avatar_url: null });
+    const { password: _, ...safeUser } = updated;
+    res.json({ user: safeUser });
+  } catch(err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
 // PATCH /auth/update
 router.patch('/update', requireAuth, async (req, res) => {
   console.log('PATCH /auth/update', req.body);

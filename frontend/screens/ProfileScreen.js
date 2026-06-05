@@ -5,6 +5,8 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
   ActivityIndicator,
   Alert,
   TouchableOpacity,
@@ -322,7 +324,26 @@ export default function ProfileScreen({ user, token, onLogout, navigation, onUpd
       setIsUpdating(false);
     }
   }
-    
+
+  async function removeAvatar() {
+    setIsUpdating(true);
+    try {
+      const data = await fetch(`${API_URL}/auth/avatar`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const result = await data.json();
+      if (!data.ok) throw new Error('Remove avatar failed');
+      onUpdateUser(result.user);
+      setPreviewURI(null);
+    } catch(err) {
+      console.error('Remove avatar error:', err);
+      Alert.alert('Error', 'Could not remove photo');
+    } finally {
+      setIsUpdating(false);
+    }
+  }
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -404,8 +425,8 @@ return (
       visible={editProfileVisible}
     >
       <View style={styles.modalBackground}>
-
-        <View style={styles.modalCard}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalCard}>
+          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
           <Text style={styles.modalHeader}>Update Profile</Text>
 
@@ -418,10 +439,19 @@ return (
             >
               <Text style={styles.modalAvatarButtonText}>{isUpdating ? 'Uploading...' : 'Update Image'}</Text>
             </TouchableOpacity>
+            {(user.avatar_url || previewURI) && (
+              <TouchableOpacity
+                style={styles.removeAvatarButton}
+                onPress={removeAvatar}
+                disabled={isUpdating}
+              >
+                <Text style={styles.removeAvatarButtonText}>Remove Photo</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           <Text style={styles.fieldLabel}>Name</Text>
-          <TextInput 
+          <TextInput
             style={styles.modalInput}
             value={editName}
             onChangeText={setEditName}
@@ -452,8 +482,8 @@ return (
             </TouchableOpacity>
           </View>
 
-        </View>
-
+          </ScrollView>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
 
@@ -728,6 +758,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#1A1F36',
+  },
+
+  removeAvatarButton: {
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+  },
+
+  removeAvatarButtonText: {
+    fontSize: 13,
+    color: '#E05252',
+    fontWeight: '600',
   },
 
   fieldLabel: {

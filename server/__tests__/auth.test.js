@@ -123,6 +123,27 @@ describe('POST /auth/login', () => {
   })
 });
 
+describe('DELETE /auth/avatar', () => {
+  const token = jwt.sign({ id: 1 }, process.env.JWT_SECRET)
+
+  test('removes avatar successfully', async () => {
+    userRepo.updateById.mockResolvedValue({ id: 1, username: 'alice', name: 'Alice', avatar_url: null, password: 'hashed' })
+
+    const res = await request(app)
+      .delete('/auth/avatar')
+      .set('Authorization', `Bearer ${token}`)
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.user.avatar_url).toBeNull()
+    expect(res.body.user.password).toBeUndefined()
+  })
+
+  test('returns 401 without token', async () => {
+    const res = await request(app).delete('/auth/avatar')
+    expect(res.statusCode).toBe(401)
+  })
+})
+
 describe('requireAuth', () => {
   const testApp = express()
   const validToken = jwt.sign({id:42}, process.env.JWT_SECRET, {expiresIn: '7d'})
