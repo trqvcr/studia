@@ -95,6 +95,84 @@ function formatDuration(seconds) {
   return `${secs}s`;
 }
 
+const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MAX_BAR_HEIGHT = 100;
+
+function WeeklyBarChart({ weeklyCounts }) {
+  const values = DAYS.map(d => weeklyCounts[d] || 0);
+  const maxVal = Math.max(...values, 1);
+  const todayIndex = new Date().getDay();
+
+  return (
+    <View style={chartStyles.container}>
+      {DAYS.map((day, i) => {
+        const val = values[i];
+        const barHeight = Math.max((val / maxVal) * MAX_BAR_HEIGHT, 2);
+        const isToday = i === todayIndex;
+        return (
+          <View key={day} style={chartStyles.barWrapper}>
+            <Text style={chartStyles.durationLabel}>
+              {val > 0 ? formatDuration(val) : ''}
+            </Text>
+            <View style={chartStyles.barTrack}>
+              <View style={[
+                chartStyles.bar,
+                { height: barHeight },
+                isToday ? chartStyles.barToday : chartStyles.barDefault,
+              ]} />
+            </View>
+            <Text style={[chartStyles.dayLabel, isToday && chartStyles.dayLabelToday]}>
+              {SHORT_DAYS[i]}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+const chartStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    paddingTop: 8,
+    paddingBottom: 4,
+    height: 160,
+  },
+  barWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  barTrack: {
+    width: '60%',
+    height: MAX_BAR_HEIGHT,
+    justifyContent: 'flex-end',
+    backgroundColor: '#EEF1F6',
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  bar: {
+    width: '100%',
+    borderRadius: 6,
+  },
+  barDefault: { backgroundColor: '#4A90D9' },
+  barToday:   { backgroundColor: '#1A1F36' },
+  durationLabel: {
+    fontSize: 8,
+    color: '#8892B0',
+    marginBottom: 2,
+    textAlign: 'center',
+  },
+  dayLabel: {
+    marginTop: 4,
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#8892B0',
+  },
+  dayLabelToday: { color: '#4A90D9' },
+});
 
 export default function ProfileScreen({ user, token, onLogout, navigation, onUpdateUser }) {
   const [weeklyCounts, setWeeklyCounts] = useState({});
@@ -416,25 +494,28 @@ return (
     </View>
 
     <View style={styles.weekCard}>
-      <Text style={styles.weekTitle}>This Week ({weekLabel}) </Text>
-      <TouchableOpacity
-        style={styles.refreshBtn}
-        onPress={loadWeeklySessions}
-      >
-        <Text style={styles.refreshBtnText}>Refresh</Text>
-      </TouchableOpacity>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <Text style={styles.weekTitle}>This Week ({weekLabel})</Text>
+        <TouchableOpacity style={styles.refreshBtn} onPress={loadWeeklySessions}>
+          <Text style={styles.refreshBtnText}>Refresh</Text>
+        </TouchableOpacity>
+      </View>
 
-      {DAYS.map((day) => {
-        const isToday = day === DAYS[new Date().getDay()];
-        return (
-          <View key={day} style={[styles.dayRow, isToday && styles.dayRowToday]}>
-            <Text style={[styles.dayText, isToday && styles.dayTextToday]}>{day}</Text>
-            <Text style={styles.countText}>
-              Time studied: {formatDuration(weeklyCounts[day]) || 0}
-            </Text>
-          </View>
-        );
-      })}
+      <WeeklyBarChart weeklyCounts={weeklyCounts} />
+
+      <View style={{ borderTopWidth: 1, borderTopColor: '#EEF1F6', marginTop: 8 }}>
+        {DAYS.map((day) => {
+          const isToday = day === DAYS[new Date().getDay()];
+          return (
+            <View key={day} style={[styles.dayRow, isToday && styles.dayRowToday]}>
+              <Text style={[styles.dayText, isToday && styles.dayTextToday]}>{day}</Text>
+              <Text style={styles.countText}>
+                {formatDuration(weeklyCounts[day]) || '0s'}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
     </View>
 
     <TouchableOpacity style={styles.logoutBtn} onPress={onLogout}>
