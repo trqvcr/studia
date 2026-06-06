@@ -114,7 +114,8 @@ Ngrok URLs usually change each time you restart ngrok unless you have a reserved
 
 ## Architecture
 
-Diagram 1 uses a component graph to show the static structure: which modules exist and how data flows between layers. Diagram 2 uses a sequence diagram to show dynamic behavior which is the order of operations for a single user action that involves all three layers.
+Diagram 1 uses a component graph to show the static structure: which modules exist and how data flows between layers.
+Diagrams 2 and 3 use sequence diagrams to show dynamic behavior which is the order of operations for key user flows that touch all three layers.
 
 ### Diagram 1 - System Component Overview
 
@@ -188,7 +189,74 @@ sequenceDiagram
     HS-->>User: Shows "🟢 Live" banner + "End Session" button
 ```
 
-### Diagram 3 - Adding Optional Study Notes to a Session (Sequence Diagram)
+### Diagram 3 - Friends: Search, Add, Accept, and Remove (Sequence Diagram)
+
+This diagram shows the full friend workflow: searching for a user, viewing
+their profile, and all possible actions (send request, accept request, or
+remove friend).
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant FS as FriendsScreen
+    participant FP as FriendProfile
+    participant Auth as requireAuth
+    participant Router as Friends Router
+    participant DB as Supabase
+
+    Note over User,DB: Phase 1 - search for a user
+    User->>FS: types username in search bar
+    FS->>FS: 500ms debounce timer
+    FS->>Auth: GET /friends/search?username=alice + Bearer JWT
+    Auth->>Router: req.user.id attached
+    Router->>DB: SELECT * FROM users WHERE username ILIKE '%alice%'
+    DB-->>Router: matching user rows
+    Router-->>FS: 200 { users: [...] }
+    FS->>FS: filter out self
+    FS-->>User: search results dropdown
+
+    Note over User,DB: Phase 2 - view friend profile
+    User->>FS: taps a user in results or friends list
+    FS->>FP: renders FriendProfile component
+    FP->>Auth: GET /friends/profile/:targetId + Bearer JWT
+    Auth->>Router: req.user.id attached
+    Router->>DB: SELECT user + friendship status + friendCount
+    DB-->>Router: user row + status (null/pending/accepted)
+    Router-->>FP: 200 { user, status, isRequester, friendCount }
+    FP-->>User: shows profile card + smart action button
+
+    Note over User,DB: Phase 3 - action depends on friendship status
+    alt status is null
+        User->>FP: taps "Request Friend"
+        FP->>Auth: POST /friends/add { friendId } + Bearer JWT
+        Auth->>Router: req.user.id attached
+        Router->>DB: INSERT INTO friendships (status=pending)
+        DB-->>Router: new row
+        Router-->>FP: 201 { friendship }
+        FP->>FP: status=pending, isRequester=true
+        FP-->>User: button changes to "Requested"
+    else status=pending and user is NOT requester
+        User->>FP: taps "Accept Request"
+        FP->>Auth: POST /friends/accept { friendId } + Bearer JWT
+        Auth->>Router: req.user.id attached
+        Router->>DB: UPDATE friendships SET status=accepted
+        DB-->>Router: updated row
+        Router-->>FP: 200 { friendship }
+        FP->>FP: status=accepted
+        FP-->>User: button changes to "Friends"
+    else status=accepted
+        User->>FP: taps "Remove Friend"
+        FP->>Auth: POST /friends/remove { friendId } + Bearer JWT
+        Auth->>Router: req.user.id attached
+        Router->>DB: DELETE FROM friendships
+        DB-->>Router: success
+        Router-->>FP: 200 { message }
+        FP->>FP: status=null
+        FP-->>User: button resets to "Request Friend"
+    end
+```
+
+### Diagram 4 - Adding Optional Study Notes to a Session (Sequence Diagram)
 
 [UML Sequence Diagram.drawio (2).pdf](https://github.com/user-attachments/files/28655902/UML.Sequence.Diagram.drawio.2.pdf)
 
